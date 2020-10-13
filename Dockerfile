@@ -205,18 +205,25 @@ RUN ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins
 
 RUN apt-get update
 RUN apt-get install -y default-mysql-client dumb-init
-RUN apt-get install -y sshpass
+RUN apt-get install -y sshpass \
+    && apt-get autoremove -yqq --purge \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/dumb-init /usr/local/bin
 
+RUN pip install --upgrade pip && pip install pystan && rm -rf /root/.cache/pip
 # Additional python deps to install
-ARG ADDITIONAL_PYTHON_DEPS="email_validator awscli nltk sklearn pymysql autocorrect configparser fbprophet plotly pandas statsmodels pmdarima matplotlib seaborn keras tensorflow xgboost"
+ARG ADDITIONAL_PYTHON_DEPS="email_validator awscli nltk sklearn pymysql autocorrect configparser convertdate fbprophet plotly pandas statsmodels pmdarima matplotlib seaborn keras tensorflow xgboost"
 
 RUN if [ -n "${ADDITIONAL_PYTHON_DEPS}" ]; then \
+        pip install -r /opt/airflow/airflow/prophet_req.txt; \
         pip install ${ADDITIONAL_PYTHON_DEPS}; \
     fi
 
-USER airflow
-
 WORKDIR ${AIRFLOW_HOME}
+
+USER airflow
+#
 
 COPY --chown=airflow:airflow ./scripts/docker/entrypoint.sh /entrypoint.sh
 
