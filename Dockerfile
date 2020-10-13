@@ -204,7 +204,7 @@ RUN rm -rf /opt/airflow/plugins
 RUN ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins
 
 RUN apt-get update
-RUN apt-get install -y default-mysql-client
+RUN apt-get install -y default-mysql-client dumb-init
 RUN apt-get install -y sshpass
 
 # Additional python deps to install
