@@ -63,7 +63,7 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
            # Packages to install \
-           libsasl2-dev freetds-bin build-essential sasl2-bin \
+           libsasl2-dev freetds-bin build-essential sasl2-bin unixodbc-dev \
            libsasl2-2 libsasl2-dev libsasl2-modules \
            default-libmysqlclient-dev apt-utils curl rsync netcat locales  \
            freetds-dev libkrb5-dev libssl-dev libffi-dev libpq-dev git \
@@ -134,7 +134,7 @@ COPY --chown=airflow:airflow setup.cfg /opt/airflow/setup.cfg
 
 COPY --chown=airflow:airflow airflow/version.py /opt/airflow/airflow/version.py
 COPY --chown=airflow:airflow airflow/__init__.py /opt/airflow/airflow/__init__.py
-COPY --chown=airflow:airflow airflow/bin/airflow /opt/airflow/airflow/bin/airflow
+#COPY --chown=airflow:airflow airflow/bin/airflow /opt/airflow/airflow/bin/airflow
 
 # Airflow Extras installed
 ARG AIRFLOW_EXTRAS="all"
@@ -144,14 +144,16 @@ RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
 # First install only dependencies but no Apache Airflow itself
 # This way regular changes in sources of Airflow will not trigger reinstallation of all dependencies
 # And this Docker layer will be reused between builds.
-RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
+#RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
+RUN pip install -e ".[${AIRFLOW_EXTRAS}]"
 
 COPY --chown=airflow:airflow airflow/www/package.json /opt/airflow/airflow/www/package.json
-COPY --chown=airflow:airflow airflow/www/package-lock.json /opt/airflow/airflow/www/package-lock.json
+#COPY --chown=airflow:airflow airflow/www/package-lock.json /opt/airflow/airflow/www/package-lock.json
 
 WORKDIR /opt/airflow/airflow/www
 
 # Install necessary NPM dependencies (triggered by changes in package-lock.json)
+RUN npm install
 RUN gosu airflow npm ci
 
 COPY --chown=airflow:airflow airflow/www/ /opt/airflow/airflow/www/
