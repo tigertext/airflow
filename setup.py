@@ -197,7 +197,7 @@ gcp = [
     'google-cloud-speech>=0.36.3',
     'grpcio-gcp>=0.2.2',
     'httplib2~=0.9.2',
-    'pandas-gbq',
+    'pandas-gbq==0.13.2',
     'PyOpenSSL',
 ]
 grpc = ['grpcio>=1.15.0']
@@ -327,7 +327,7 @@ def do_setup():
             'jinja2>=2.10.1, <2.11.0',
             'lazy_object_proxy~=1.3',
             'markdown>=2.5.2, <3.0',
-            'pandas>=0.17.1, <1.0.0',
+            'pandas==0.25.3',
             'pendulum==1.4.4',
             'psutil>=4.2.0, <6.0.0',
             'pygments>=2.0.1, <3.0',

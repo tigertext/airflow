@@ -204,9 +204,12 @@ RUN ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins
 RUN apt-get update
 RUN apt-get install -y default-mysql-client
 RUN apt-get install -y sshpass
+RUN pip list
 
 # Additional python deps to install
-ARG ADDITIONAL_PYTHON_DEPS="email_validator awscli nltk sklearn pymysql autocorrect configparser fbprophet plotly pandas statsmodels pmdarima matplotlib seaborn keras tensorflow xgboost"
+ARG ADDITIONAL_PYTHON_DEPS="email_validator==1.1.1. awscli==1.18.103 nltk==3.5 sklearn==0.0 pymysql==0.10.0 autocorrect==2.0.0 configparser==3.5.3 fbprophet==0.6 plotly==4.9.0 pandas==0.25.3 statsmodels==0.11.1 pmdarima==1.6.1 matplotlib==3.3.0 seaborn==0.10.1 keras==2.4.3 tensorflow==2.2.0  xgboost"
+
+#        pip install -r airflow/prophet_req.txt && \
 
 RUN if [ -n "${ADDITIONAL_PYTHON_DEPS}" ]; then \
         pip install ${ADDITIONAL_PYTHON_DEPS}; \
