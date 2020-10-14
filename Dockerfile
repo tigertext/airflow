@@ -37,8 +37,8 @@ ARG AIRFLOW_VERSION="2.0.0.dev0"
 ENV AIRFLOW_VERSION=$AIRFLOW_VERSION
 
 # Print versions
-RUN echo "Base image: ${PYTHON_BASE_IMAGE}"
-RUN echo "Airflow version: ${AIRFLOW_VERSION}"
+#RUN echo "Base image: ${PYTHON_BASE_IMAGE}" && \
+# echo "Airflow version: ${AIRFLOW_VERSION}"
 
 # Make sure noninteractie debian install is used and language variables set
 ENV DEBIAN_FRONTEND=noninteractive LANGUAGE=C.UTF-8 LANG=C.UTF-8 LC_ALL=C.UTF-8 \
@@ -55,11 +55,8 @@ RUN apt-get update \
            curl gnupg2 \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-
-# Install basic apt dependencies
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+    && rm -rf /var/lib/apt/lists/* && \
+ curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
            # Packages to install \
@@ -70,9 +67,8 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
            nodejs gosu sudo \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN adduser airflow \
+    && rm -rf /var/lib/apt/lists/* && \
+ adduser airflow \
     && echo "airflow ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/airflow \
     && chmod 0440 /etc/sudoers.d/airflow
 
@@ -89,7 +85,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
 WORKDIR /opt/airflow
 
-RUN echo "Airflow version: ${AIRFLOW_VERSION}"
+#RUN echo "Airflow version: ${AIRFLOW_VERSION}"
 
 ARG APT_DEPS_IMAGE
 ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
@@ -116,14 +112,14 @@ ENV CASS_DRIVER_NO_CYTHON=${CASS_DRIVER_NO_CYTHON}
 # By default PIP install run without cache to make image smaller
 ARG PIP_NO_CACHE_DIR="true"
 ENV PIP_NO_CACHE_DIR=${PIP_NO_CACHE_DIR}
-RUN echo "Pip no cache dir: ${PIP_NO_CACHE_DIR}"
+#RUN echo "Pip no cache dir: ${PIP_NO_CACHE_DIR}"
 
 # PIP version used to install dependencies
 ARG PIP_VERSION="19.2.3"
 ENV PIP_VERSION=${PIP_VERSION}
-RUN echo "Pip version: ${PIP_VERSION}"
+#RUN echo "Pip version: ${PIP_VERSION}"
 
-RUN pip install --upgrade pip==${PIP_VERSION}
+RUN pip install --upgrade pip==${PIP_VERSION}  --no-cache-dir
 
 # Airflow sources change frequently but dependency configuration won't change that often
 # We copy setup.py and other files needed to perform setup of dependencies
@@ -139,13 +135,13 @@ COPY --chown=airflow:airflow airflow/__init__.py /opt/airflow/airflow/__init__.p
 # Airflow Extras installed
 ARG AIRFLOW_EXTRAS="all"
 ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
-RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
+#RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
 
 # First install only dependencies but no Apache Airflow itself
 # This way regular changes in sources of Airflow will not trigger reinstallation of all dependencies
 # And this Docker layer will be reused between builds.
 #RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
-RUN pip install -e ".[${AIRFLOW_EXTRAS}]"
+RUN pip install -e ".[${AIRFLOW_EXTRAS}]"  --no-cache-dir
 
 COPY --chown=airflow:airflow airflow/www/package.json /opt/airflow/airflow/www/package.json
 #COPY --chown=airflow:airflow airflow/www/package-lock.json /opt/airflow/airflow/www/package-lock.json
@@ -153,8 +149,7 @@ COPY --chown=airflow:airflow airflow/www/package.json /opt/airflow/airflow/www/p
 WORKDIR /opt/airflow/airflow/www
 
 # Install necessary NPM dependencies (triggered by changes in package-lock.json)
-RUN npm install
-RUN gosu airflow npm ci
+RUN npm install &&  gosu airflow npm ci
 
 COPY --chown=airflow:airflow airflow/www/ /opt/airflow/airflow/www/
 
@@ -179,45 +174,39 @@ COPY --chown=airflow:airflow . /opt/airflow/
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install DE scripts dependencies
-RUN mkdir -p /usr/share/man/man1
-
-# Install Java 11
-RUN apt-get update
-RUN apt-get install -y dirmngr
-RUN apt-get install -y wget
-RUN echo "deb http://ppa.launchpad.net/linuxuprising/java/ubuntu bionic main" | tee /etc/apt/sources.list.d/linuxuprising-java.list
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 73C3DB2A
-RUN apt-get update
-RUN echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 select true" | debconf-set-selections
-RUN echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 seen true" | debconf-set-selections
-RUN mkdir -p /var/cache/oracle-jdk11-installer-local
-RUN wget https://tt-packages.s3.amazonaws.com/jdk-11.0.8_linux-x64_bin.tar.gz -O /var/cache/oracle-jdk11-installer-local/jdk-11.0.8_linux-x64_bin.tar.gz
-RUN apt-get install -y oracle-java11-installer-local
+    && rm -rf /var/lib/apt/lists/* && \
+ mkdir -p /usr/share/man/man1 && \
+ apt-get update && \
+ apt-get install -y dirmngr && \
+ apt-get install -y wget && \
+ echo "deb http://ppa.launchpad.net/linuxuprising/java/ubuntu bionic main" | tee /etc/apt/sources.list.d/linuxuprising-java.list && \
+ apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 73C3DB2A && \
+ apt-get update && \
+ echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 select true" | debconf-set-selections && \
+ echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 seen true" | debconf-set-selections && \
+ mkdir -p /var/cache/oracle-jdk11-installer-local && \
+ wget https://tt-packages.s3.amazonaws.com/jdk-11.0.8_linux-x64_bin.tar.gz -O /var/cache/oracle-jdk11-installer-local/jdk-11.0.8_linux-x64_bin.tar.gz && \
+ apt-get install -y oracle-java11-installer-local
 
 # Link to DE team folders
-RUN rm -rf /opt/airflow/dags
-RUN ln -s /opt/de-infra-tools/airflow/dags /opt/airflow/dags
-RUN rm -rf /opt/airflow/plugins
-RUN ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins
-
-RUN apt-get update
-RUN apt-get install -y default-mysql-client dumb-init
-RUN apt-get install -y sshpass \
+RUN rm -rf /opt/airflow/dags && \
+ ln -s /opt/de-infra-tools/airflow/dags /opt/airflow/dags && \
+ rm -rf /opt/airflow/plugins && \
+ ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins && \
+ apt-get update && \
+ apt-get install -y default-mysql-client dumb-init && \
+ apt-get install -y sshpass \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/dumb-init /usr/local/bin
-
-RUN pip install --upgrade pip && pip install pystan && rm -rf /root/.cache/pip
+    && ln -s /usr/bin/dumb-init /usr/local/bin && \
+ pip install --upgrade pip  --no-cache-dir && pip install pystan  --no-cache-dir && rm -rf /root/.cache/pip
 # Additional python deps to install
 ARG ADDITIONAL_PYTHON_DEPS="email_validator awscli nltk sklearn pymysql autocorrect configparser convertdate fbprophet plotly pandas statsmodels pmdarima matplotlib seaborn keras tensorflow xgboost"
 
 RUN if [ -n "${ADDITIONAL_PYTHON_DEPS}" ]; then \
-        pip install -r /opt/airflow/airflow/prophet_req.txt; \
-        pip install ${ADDITIONAL_PYTHON_DEPS}; \
+        pip install -r /opt/airflow/airflow/prophet_req.txt  --no-cache-dir; \
+        pip install ${ADDITIONAL_PYTHON_DEPS}  --no-cache-dir; \
     fi
 
 WORKDIR ${AIRFLOW_HOME}
