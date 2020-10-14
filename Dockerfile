@@ -131,6 +131,7 @@ RUN pip install --upgrade pip==${PIP_VERSION}
 # version/setup configuration change but not when airflow sources change
 COPY --chown=airflow:airflow setup.py /opt/airflow/setup.py
 COPY --chown=airflow:airflow setup.cfg /opt/airflow/setup.cfg
+COPY --chown=airflow:airflow README.md /opt/airflow/README.md
 
 COPY --chown=airflow:airflow airflow/version.py /opt/airflow/airflow/version.py
 COPY --chown=airflow:airflow airflow/__init__.py /opt/airflow/airflow/__init__.py
