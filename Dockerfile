@@ -119,7 +119,7 @@ ENV PIP_NO_CACHE_DIR=${PIP_NO_CACHE_DIR}
 RUN echo "Pip no cache dir: ${PIP_NO_CACHE_DIR}"
 
 # PIP version used to install dependencies
-ARG PIP_VERSION="19.0.1"
+ARG PIP_VERSION="19.2.3"
 ENV PIP_VERSION=${PIP_VERSION}
 RUN echo "Pip version: ${PIP_VERSION}"
 
@@ -179,8 +179,34 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install DE scripts dependencies
+RUN mkdir -p /usr/share/man/man1
+
+# Install Java 11
+RUN apt-get update
+RUN apt-get install -y dirmngr
+RUN apt-get install -y wget
+RUN echo "deb http://ppa.launchpad.net/linuxuprising/java/ubuntu bionic main" | tee /etc/apt/sources.list.d/linuxuprising-java.list
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 73C3DB2A
+RUN apt-get update
+RUN echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 select true" | debconf-set-selections
+RUN echo "oracle-java11-installer-local shared/accepted-oracle-license-v1-2 seen true" | debconf-set-selections
+RUN mkdir -p /var/cache/oracle-jdk11-installer-local
+RUN wget https://tt-packages.s3.amazonaws.com/jdk-11.0.8_linux-x64_bin.tar.gz -O /var/cache/oracle-jdk11-installer-local/jdk-11.0.8_linux-x64_bin.tar.gz
+RUN apt-get install -y oracle-java11-installer-local
+
+# Link to DE team folders
+RUN rm -rf /opt/airflow/dags
+RUN ln -s /opt/de-infra-tools/airflow/dags /opt/airflow/dags
+RUN rm -rf /opt/airflow/plugins
+RUN ln -s /opt/de-infra-tools/airflow/plugins /opt/airflow/plugins
+
+RUN apt-get update
+RUN apt-get install -y default-mysql-client
+RUN apt-get install -y sshpass
+
 # Additional python deps to install
-ARG ADDITIONAL_PYTHON_DEPS=""
+ARG ADDITIONAL_PYTHON_DEPS="email_validator awscli nltk sklearn pymysql autocorrect configparser fbprophet plotly pandas statsmodels pmdarima matplotlib seaborn keras tensorflow xgboost"
 
 RUN if [ -n "${ADDITIONAL_PYTHON_DEPS}" ]; then \
         pip install ${ADDITIONAL_PYTHON_DEPS}; \
